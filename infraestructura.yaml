@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Plantilla de CloudFormation para Soluciones Tecnologicas del Futuro - Despliega EC2 y S3'
+
+Resources:
+  ServidorWebEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-0ec10929233384c7f
+      IamInstanceProfile: LabInstanceProfile
+      Tags:
+        - Key: Name
+          Value: STF-Servidor-Web-IaC
+
+  BucketAlmacenamientoS3:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'stf-datos-${AWS::AccountId}-${AWS::Region}'
+      Tags:
+        - Key: Entorno
+          Value: Desarrollo
+
+Outputs:
+  IDInstanciaEC2:
+    Description: ID de la instancia EC2 creada
+    Value: !Ref ServidorWebEC2
+  NombreBucketS3:
+    Description: Nombre del bucket S3 creado
+    Value: !Ref BucketAlmacenamientoS3
