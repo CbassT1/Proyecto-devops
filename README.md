@@ -1,6 +1,7 @@
 # Proyecto Final - Fundamentos de DevOps
 
-**Autores:** * Sebastián Daniel Mata Treviño
+**Autores:** 
+* Sebastián Daniel Mata Treviño
 * Yamil Alejandro Ramírez Pérez
 
 ---
