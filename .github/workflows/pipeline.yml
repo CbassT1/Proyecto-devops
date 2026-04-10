@@ -10,18 +10,22 @@ jobs:
     steps:
       - name: Conectar a EC2 y Desplegar
         uses: appleboy/ssh-action@master
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: GH_TOKEN
           script: |
-            # 1. Bajar los cambios
+            # 1. Bajar los cambios usando el token de forma segura
             cd /home/ubuntu/Proyecto-devops
-            git pull origin develop
+            git pull https://${GH_TOKEN}@github.com/CbassT1/Proyecto-devops.git develop
             
-            # 2. Levantar la aplicacion con Docker
+            # 2. Levantar la aplicacion apagando BuildKit para evitar el KeyError
             cd app-docker
-            sudo docker-compose up -d --build
+            sudo DOCKER_BUILDKIT=0 docker-compose down
+            sudo DOCKER_BUILDKIT=0 docker-compose up -d --build
             
             # 3. Pruebas automatizadas
             echo "Esperando 5 segundos para que inicie la app..."
