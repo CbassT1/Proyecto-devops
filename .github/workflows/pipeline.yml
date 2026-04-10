@@ -1,0 +1,38 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches: [ develop, main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conectar a EC2 y Desplegar
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. Bajar los cambios
+            cd /home/ubuntu/Proyecto-devops
+            git pull origin develop
+            
+            # 2. Levantar la aplicacion con Docker
+            cd app-docker
+            sudo docker-compose up -d --build
+            
+            # 3. Pruebas automatizadas
+            echo "Esperando 5 segundos para que inicie la app..."
+            sleep 5
+            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080)
+            
+            if [ "$HTTP_STATUS" == "200" ]; then
+              echo "Prueba exitosa. Codigo 200 OK. Despliegue completado."
+            else
+              echo "Fallo en la prueba. La app no responde."
+              chmod +x ../rollback.sh
+              ../rollback.sh
+              exit 1
+            fi
