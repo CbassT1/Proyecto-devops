@@ -18,25 +18,33 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: GH_TOKEN
           script: |
-            # 1. Forzar la descarga exacta desde GitHub (ignora diferencias locales)
+            # 1. Bajar los cambios
             cd /home/ubuntu/Proyecto-devops
             git fetch https://${GH_TOKEN}@github.com/CbassT1/Proyecto-devops.git develop
             git reset --hard FETCH_HEAD
             
-            # 2. Levantar la aplicacion con Docker
+            # 2. Levantar la aplicacion
             cd app-docker
             sudo DOCKER_BUILDKIT=0 docker-compose down
             sudo DOCKER_BUILDKIT=0 docker-compose up -d --build
             
-            # 3. Pruebas automatizadas
-            echo "Esperando 10 segundos para que inicie la app..."
-            sleep 10
-            HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080)
+            # 3. Pruebas automatizadas (Smart Wait)
+            echo "Realizando pruebas de conexion a la aplicacion..."
+            HTTP_STATUS="000"
+            for i in {1..6}; do
+              sleep 5
+              HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://127.0.0.1:8080)
+              if [ "$HTTP_STATUS" == "200" ]; then
+                echo "Prueba exitosa en intento $i. Codigo 200 OK."
+                break
+              fi
+              echo "Intento $i: La app devolvio el codigo $HTTP_STATUS. Esperando que encienda..."
+            done
             
             if [ "$HTTP_STATUS" == "200" ]; then
-              echo "Prueba exitosa. Codigo 200 OK. Despliegue completado."
+              echo "Despliegue completado y validado en produccion."
             else
-              echo "Fallo en la prueba. La app no responde."
+              echo "Fallo critico en la prueba. Iniciando rollback."
               chmod +x ../rollback.sh
               ../rollback.sh
               exit 1
