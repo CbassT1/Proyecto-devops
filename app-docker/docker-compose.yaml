@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  flask_app:
+    build: .
+    networks:
+      - stf_network
+    volumes:
+      - app_data:/app/data
+
+  nginx_server:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - stf_network
+    depends_on:
+      - flask_app
+
+networks:
+  stf_network:
+    driver: bridge
+
+volumes:
+  app_data:
