@@ -23,10 +23,10 @@ jobs:
             git fetch https://${GH_TOKEN}@github.com/CbassT1/Proyecto-devops.git develop
             git reset --hard FETCH_HEAD
             
-            # 2. Levantar la aplicacion
+            # 2. Limpiar huerfanos y levantar la aplicacion
             cd app-docker
-            sudo DOCKER_BUILDKIT=0 docker-compose down
-            sudo DOCKER_BUILDKIT=0 docker-compose up -d --build
+            sudo DOCKER_BUILDKIT=0 docker-compose down --remove-orphans
+            sudo DOCKER_BUILDKIT=0 docker-compose up -d --build --remove-orphans
             
             # 3. Pruebas automatizadas (Smart Wait)
             echo "Realizando pruebas de conexion a la aplicacion..."
