@@ -1,29 +1,76 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Plantilla de CloudFormation para Soluciones Tecnologicas del Futuro - Despliega EC2 y S3'
-
 Resources:
+  MiVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: STF-VPC
+  MiInternetGateway:
+    Type: AWS::EC2::InternetGateway
+  MiVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MiVPC
+      InternetGatewayId: !Ref MiInternetGateway
+  SubredPublica:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MiVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: us-east-1a
+  SubredPrivada:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MiVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: us-east-1b
+  TablaEnrutamientoPublica:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MiVPC
+  RutaPublica:
+    Type: AWS::EC2::Route
+    DependsOn: MiVPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref TablaEnrutamientoPublica
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref MiInternetGateway
+  AsociacionSubredPublica:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubredPublica
+      RouteTableId: !Ref TablaEnrutamientoPublica
+  GrupoSeguridadWeb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Permite HTTP y puerto 8080 (Puerto 22 bloqueado por seguridad)
+      VpcId: !Ref MiVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
   ServidorWebEC2:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
       ImageId: ami-0ec10929233384c7f
       IamInstanceProfile: LabInstanceProfile
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref GrupoSeguridadWeb
+          SubnetId: !Ref SubredPublica
       Tags:
         - Key: Name
-          Value: STF-Servidor-Web-IaC
-
-  BucketAlmacenamientoS3:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub 'stf-datos-${AWS::AccountId}-${AWS::Region}'
-      Tags:
-        - Key: Entorno
-          Value: Desarrollo
-
-Outputs:
-  IDInstanciaEC2:
-    Description: ID de la instancia EC2 creada
-    Value: !Ref ServidorWebEC2
-  NombreBucketS3:
-    Description: Nombre del bucket S3 creado
-    Value: !Ref BucketAlmacenamientoS3
+          Value: STF-Servidor-Web
