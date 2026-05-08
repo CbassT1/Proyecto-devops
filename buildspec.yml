@@ -1,0 +1,21 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.9
+  pre_build:
+    commands:
+      - echo "Iniciando pruebas unitarias automatizadas con Pytest..."
+      - cd app-docker
+      - pip install -r requirements.txt
+      - pytest test_app.py
+      - cd ..
+  build:
+    commands:
+      - echo "Construyendo la imagen de Docker multi-stage..."
+      - cd app-docker
+      - docker-compose build
+  post_build:
+    commands:
+      - echo "Pruebas y construccion completadas con exito para Soluciones Tecnologicas del Futuro."

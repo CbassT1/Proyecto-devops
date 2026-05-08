@@ -8,7 +8,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Conectar a EC2 y Desplegar
+      - name: Desplegar en EC2
         uses: appleboy/ssh-action@master
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
