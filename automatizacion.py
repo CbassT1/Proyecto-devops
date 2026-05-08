@@ -2,6 +2,7 @@ import boto3
 
 ec2 = boto3.client('ec2', region_name='us-east-1')
 s3 = boto3.client('s3')
+autoscaling = boto3.client('autoscaling', region_name='us-east-1')
 
 def aprovisionar_instancia():
     print("1. Aprovisionando nueva instancia EC2...")
@@ -20,11 +21,30 @@ def aprovisionar_instancia():
         )
         id_instancia = respuesta['Instances'][0]['InstanceId']
         print(f"Instancia creada exitosamente. ID: {id_instancia}")
+        return id_instancia
     except Exception as e:
         print(f"Error al crear instancia: {e}")
+        return None
+
+def gestionar_autoescalado(id_instancia):
+    print("\n2. Configurando Auto Scaling Group...")
+    if not id_instancia:
+        print("No hay ID de instancia valido para autoescalado.")
+        return
+    try:
+        autoscaling.create_auto_scaling_group(
+            AutoScalingGroupName='STF-AutoScalingGroup',
+            InstanceId=id_instancia,
+            MinSize=1,
+            MaxSize=2,
+            DesiredCapacity=1
+        )
+        print("Grupo de autoescalado creado con exito.")
+    except Exception as e:
+        print(f"Aviso por restricciones de Learner Lab en AutoScaling: {e}")
 
 def reporte_recursos():
-    print("\n2. Generando reporte de instancias EC2...")
+    print("\n3. Generando reporte de instancias EC2...")
     try:
         respuesta = ec2.describe_instances()
         for reservacion in respuesta['Reservations']:
@@ -37,7 +57,7 @@ def reporte_recursos():
         print(f"Error al obtener instancias: {e}")
 
 def reporte_s3():
-    print("\n3. Listando Buckets S3 y sus objetos...")
+    print("\n4. Listando Buckets S3 y sus objetos...")
     try:
         buckets = s3.list_buckets()['Buckets']
         if not buckets:
@@ -52,13 +72,14 @@ def reporte_s3():
                 for obj in objetos['Contents']:
                     print(f"      -> Objeto: {obj['Key']} ({obj['Size']} bytes)")
             else:
-                print("      -> (Bucket vacío)")
+                print("      -> (Bucket vacio)")
     except Exception as e:
         print(f"Error al obtener buckets: {e}")
 
 if __name__ == "__main__":
-    print("=== INICIANDO AUTOMATIZACIÓN CON BOTO3 ===\n")
-    aprovisionar_instancia()
+    print("=== INICIANDO AUTOMATIZACION CON BOTO3 ===\n")
+    id_nueva_instancia = aprovisionar_instancia()
+    gestionar_autoescalado(id_nueva_instancia)
     reporte_recursos()
     reporte_s3()
     print("\n=== SCRIPT FINALIZADO ===")
